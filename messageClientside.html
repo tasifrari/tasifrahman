@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Box</title>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3.2.0/dist/email.min.js"></script>
+    <style>
+
+        h1{
+            text-align: center;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: rgb(4, 1, 49);
+            color: white;
+            padding: 20px;
+        }
+        #chatBox {
+            background-color: grey;
+            padding:15px;
+            height: 300px;
+            overflow-y: scroll;
+            border-radius: .2rem;
+
+            margin-bottom: 10px;
+        }
+        #messageInput {
+            border-radius: .2rem;
+            border-width: 0px;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: .2rem;
+        }
+        button:hover {
+            background-color: #01448b;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .user-message {
+            background-color: rgb(73, 95, 119);
+            border-radius: .2rem;
+            text-align: right;
+        }
+        .admin-message {
+            background-color: rgb(124, 105, 83);
+            border-radius: .2rem;
+
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Message Box</h1>
+    <div id="chatBox"></div>
+    <textarea id="messageInput" placeholder="Type your message anonymously..."></textarea>
+    <button onclick="sendMessage()">Submit</button>
+    <button id="clearHistoryBtn" onclick="clearHistory()">Clear History</button>
+
+    <script>
+        // Initialize EmailJS with your public key (replace with your EmailJS user ID)
+        emailjs.init("YOUR_EMAILJS_USER_ID");
+
+        // Load chat history from localStorage
+        function loadChatHistory() {
+            const chatBox = document.getElementById('chatBox');
+            const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
+            chatBox.innerHTML = '';
+            history.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `message ${msg.sender === 'user' ? 'user-message' : 'admin-message'}`;
+                div.textContent = `${msg.sender === 'user' ? 'You' : 'Admin'}: ${msg.text} (${msg.timestamp})`;
+                chatBox.appendChild(div);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Send message and save to localStorage
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            const timestamp = new Date().toLocaleString();
+            const chatBox = document.getElementById('chatBox');
+
+            // Add message to chat box
+            const div = document.createElement('div');
+            div.className = 'message user-message';
+            div.textContent = `You: ${message} (${timestamp})`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Save to localStorage
+            const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
+            history.push({ sender: 'user', text: message, timestamp });
+            localStorage.setItem('chatHistory', JSON.stringify(history));
+
+            // Send email using EmailJS
+            emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+                message: message,
+                timestamp: timestamp,
+                reply_to: "user@example.com" // Replace with user's email if available
+            }).then(
+                () => console.log('Email sent successfully'),
+                (error) => console.error('Email sending failed:', error)
+            );
+
+            // Clear input
+            messageInput.value = '';
+        }
+
+        //clears history
+        function clearHistory() {
+            localStorage.removeItem('chatHistory');
+            document.getElementById('chatBox').innerHTML = '';
+        }
+
+        // Load chat history when page loads
+        window.onload = loadChatHistory;
+
+        // Poll for new admin messages (simulated with localStorage)
+        setInterval(loadChatHistory, 5000);
+    </script>
+</body>
+</html>
